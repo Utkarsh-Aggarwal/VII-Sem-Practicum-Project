@@ -1,40 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { requireCaregiverForElder } from "@/lib/auth";
+import { readJson, route } from "@/lib/http";
+import { discardStaleCheckIns } from "@/lib/checkins";
+import { REMINDER_TYPES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+type Ctx = { params: Promise<{ id: string }> };
+
+const patchSchema = z.object({
+  label: z.string().trim().min(1).max(80).optional(),
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "time must be HH:mm").optional(),
+  question: z.string().trim().min(1).max(200).optional(),
+  active: z.boolean().optional(),
+  daysOfWeek: z.string().regex(/^[1-7](,[1-7])*$/, "daysOfWeek must look like 1,2,3").optional(),
+  type: z.enum(REMINDER_TYPES).optional(),
+});
+
+export const PATCH = route<Ctx>(async (request, { params }) => {
   const { id } = await params;
-  const body = await request.json();
-  const { label, time, question, active, daysOfWeek, type } = body ?? {};
+  const existing = await prisma.reminder.findUniqueOrThrow({ where: { id }, include: { elder: true } });
+  await requireCaregiverForElder(request, existing.elderId);
+  const body = await readJson(request, patchSchema);
 
-  if (time && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
-    return NextResponse.json({ error: "time must be HH:mm" }, { status: 400 });
-  }
+  const reminder = await prisma.reminder.update({ where: { id }, data: body });
 
-  const reminder = await prisma.reminder.update({
-    where: { id },
-    data: {
-      ...(label !== undefined ? { label } : {}),
-      ...(time !== undefined ? { time } : {}),
-      ...(question !== undefined ? { question } : {}),
-      ...(active !== undefined ? { active } : {}),
-      ...(daysOfWeek !== undefined ? { daysOfWeek } : {}),
-      ...(type !== undefined ? { type } : {}),
-    },
-  });
+  const rescheduled =
+    (body.time !== undefined && body.time !== existing.time) ||
+    (body.daysOfWeek !== undefined && body.daysOfWeek !== existing.daysOfWeek) ||
+    body.active === false;
+  if (rescheduled) await discardStaleCheckIns(existing, existing.elder.timezone);
 
   return NextResponse.json({ reminder });
-}
+});
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = route<Ctx>(async (request, { params }) => {
   const { id } = await params;
+  const existing = await prisma.reminder.findUniqueOrThrow({ where: { id } });
+  await requireCaregiverForElder(request, existing.elderId);
   await prisma.reminder.delete({ where: { id } });
   return NextResponse.json({ ok: true });
-}
+});

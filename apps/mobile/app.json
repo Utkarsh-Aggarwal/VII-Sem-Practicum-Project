@@ -20,6 +20,22 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "CareCircle uses the microphone so you can talk to your companion."
+        }
+      ],
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "30827677-7919-446d-a8c1-928de0363110"
+      }
+    },
+    "owner": "harrypotter5728"
   }
 }

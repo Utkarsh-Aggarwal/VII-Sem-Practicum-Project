@@ -1,19 +1,19 @@
 import { CheckInStatus } from "@/lib/types";
 
 const STYLES: Record<CheckInStatus, string> = {
-  PENDING: "bg-slate-100 text-slate-600",
+  PENDING: "bg-stone-100 text-stone-600",
   DONE_ON_TIME: "bg-[var(--success-soft)] text-[var(--success)]",
   DONE_LATE: "bg-[var(--warning-soft)] text-[var(--warning)]",
   MISSED: "bg-[var(--danger-soft)] text-[var(--danger)]",
-  SKIPPED: "bg-slate-100 text-slate-500",
+  SKIPPED: "bg-stone-100 text-stone-500",
 };
 
 const DOT: Record<CheckInStatus, string> = {
-  PENDING: "bg-slate-400",
+  PENDING: "bg-stone-400",
   DONE_ON_TIME: "bg-emerald-500",
   DONE_LATE: "bg-amber-500",
   MISSED: "bg-rose-500",
-  SKIPPED: "bg-slate-400",
+  SKIPPED: "bg-stone-400",
 };
 
 const LABELS: Record<CheckInStatus, string> = {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100";
+  "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent-soft";
 
 const CAMERA_ICON = (
   <path
@@ -47,10 +47,10 @@ export function LiveFeed({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5">
-        <h2 className="flex items-center gap-2 font-medium text-slate-900">
-          <svg className="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+    <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-stone-100 px-5 py-3.5">
+        <h2 className="flex items-center gap-2 font-medium text-stone-900">
+          <svg className="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
             {CAMERA_ICON}
           </svg>
           Live feed
@@ -64,7 +64,7 @@ export function LiveFeed({
           )}
           <button
             onClick={() => setEditing((e) => !e)}
-            className="text-xs font-medium text-slate-400 transition hover:text-indigo-600"
+            className="text-xs font-medium text-stone-400 transition hover:text-accent"
           >
             {url ? "Change camera" : "Add camera"}
           </button>
@@ -79,7 +79,7 @@ export function LiveFeed({
         />
       )}
 
-      <div className="relative flex aspect-video items-center justify-center bg-linear-to-br from-slate-800 via-slate-900 to-slate-950">
+      <div className="relative flex aspect-video items-center justify-center bg-linear-to-br from-stone-800 via-stone-900 to-stone-950">
         {url && !streamError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -99,27 +99,27 @@ export function LiveFeed({
                 backgroundSize: "28px 28px",
               }}
             />
-            <div className="relative text-center text-slate-400">
+            <div className="relative text-center text-stone-400">
               <svg className="mx-auto mb-2 h-10 w-10 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 {CAMERA_ICON}
               </svg>
               {url && streamError ? (
                 <>
-                  <p className="text-sm font-medium text-slate-300">Can&apos;t reach the camera</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="text-sm font-medium text-stone-300">Can&apos;t reach the camera</p>
+                  <p className="mt-0.5 text-xs text-stone-500">
                     Check that {elderName}&apos;s ESP32-CAM is powered on and on the same network
                   </p>
                   <button
                     onClick={retry}
-                    className="mt-3 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:bg-white/20"
+                    className="mt-3 rounded-lg bg-white/10 px-3 py-1.5 text-xs font-medium text-stone-200 transition hover:bg-white/20"
                   >
                     Retry
                   </button>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-slate-300">No camera connected</p>
-                  <p className="mt-0.5 text-xs text-slate-500">{elderName}&apos;s home camera will appear here</p>
+                  <p className="text-sm font-medium text-stone-300">No camera connected</p>
+                  <p className="mt-0.5 text-xs text-stone-500">{elderName}&apos;s home camera will appear here</p>
                 </>
               )}
             </div>
@@ -152,17 +152,17 @@ function CameraUrlForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-wrap items-end gap-3 border-b border-slate-100 bg-slate-50/70 px-5 py-3.5"
+      className="flex flex-wrap items-end gap-3 border-b border-stone-100 bg-stone-50/70 px-5 py-3.5"
     >
       <div className="min-w-[220px] flex-1">
-        <label className="block text-xs font-medium text-slate-600">ESP32-CAM address</label>
+        <label className="block text-xs font-medium text-stone-600">ESP32-CAM address</label>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="http://192.168.1.50"
           className={inputClass}
         />
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-stone-400">
           The IP printed in the Arduino serial monitor after it connects to WiFi. Must be reachable from this browser
           (same LAN, unless port-forwarded).
         </p>
@@ -171,14 +171,14 @@ function CameraUrlForm({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm shadow-indigo-100 transition hover:bg-indigo-700 disabled:opacity-50"
+          className="rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-accent-hover disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100"
+          className="rounded-lg px-3.5 py-2 text-sm font-medium text-stone-500 transition hover:bg-stone-100"
         >
           Cancel
         </button>

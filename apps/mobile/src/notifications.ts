@@ -28,14 +28,16 @@ export async function setupAndroidChannel() {
       importance: Notifications.AndroidImportance.HIGH,
       sound: "default",
     });
+    await Notifications.setNotificationChannelAsync("alerts", {
+      name: "Family alerts",
+      importance: Notifications.AndroidImportance.MAX,
+      sound: "default",
+    });
   }
 }
 
-// Cancels everything and re-schedules one repeating daily notification per active reminder.
-export async function syncDailyReminderNotifications(reminders: Reminder[]) {
-  if (isExpoGo) return;
+async function setForegroundHandler() {
   const Notifications = await import("expo-notifications");
-
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -44,6 +46,32 @@ export async function syncDailyReminderNotifications(reminders: Reminder[]) {
       shouldSetBadge: false,
     }),
   });
+}
+
+// Expo push token for server-sent notifications (reminders from the backend scheduler, caregiver
+// alerts). Needs a development build with an EAS projectId; returns null when unavailable, in
+// which case the senior app falls back to local daily notifications.
+export async function getPushToken(): Promise<string | null> {
+  if (isExpoGo) return null;
+  try {
+    if (!(await ensureNotificationPermission())) return null;
+    await setupAndroidChannel();
+    await setForegroundHandler();
+    const Notifications = await import("expo-notifications");
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+    if (!projectId) return null;
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// Cancels everything and re-schedules one repeating daily notification per active reminder.
+export async function syncDailyReminderNotifications(reminders: Reminder[]) {
+  if (isExpoGo) return;
+  const Notifications = await import("expo-notifications");
+  await setForegroundHandler();
 
   await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -59,9 +87,16 @@ export async function syncDailyReminderNotifications(reminders: Reminder[]) {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour,
         minute,
+        channelId: "reminders",
       },
     });
   }
+}
+
+export async function cancelLocalReminders() {
+  if (isExpoGo) return;
+  const Notifications = await import("expo-notifications");
+  await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 export function notificationsAvailable(): boolean {

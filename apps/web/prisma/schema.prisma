@@ -19,22 +19,35 @@ model Elder {
   avatarColor  String   @default("#5B8DEF")
   timezone     String   @default("Asia/Kolkata")
   cameraUrl    String?  // base URL of the elder's ESP32-CAM, e.g. http://192.168.1.50 (stream served at {cameraUrl}/stream)
+  language     String   @default("en") // "en" | "hi" — language the companion and spoken reminders use
+  profile      String?  // free-text notes the AI companion is grounded with: interests, family names, routine, health context
+  pairingCode  String?  @unique // 6-digit code the senior app / hub enters once to pair with this elder
   createdAt    DateTime @default(now())
 
-  caregivers   CaregiverLink[]
-  reminders    Reminder[]
-  checkIns     CheckIn[]
-  moodLogs     MoodLog[]
+  caregivers     CaregiverLink[]
+  reminders      Reminder[]
+  checkIns       CheckIn[]
+  moodLogs       MoodLog[]
+  devices        Device[]
+  selfReports    SelfReport[]
+  sensorReadings SensorReading[]
+  chatMessages   ChatMessage[]
+  conversations  Conversation[]
+  alerts         Alert[]
+  notes          CaregiverNote[]
 }
 
 // A child / caregiver using the web admin dashboard
 model Caregiver {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String?  // scrypt hash (see src/lib/auth.ts); null for legacy rows created before auth existed
+  pushToken    String?  // Expo push token from the caregiver mode of the mobile app, for alerts
+  createdAt    DateTime @default(now())
 
   elders    CaregiverLink[]
+  notes     CaregiverNote[]
 }
 
 // Many-to-many: a caregiver can watch multiple elders, an elder can have multiple caregivers
@@ -71,15 +84,19 @@ model CheckIn {
   id           String        @id @default(cuid())
   elderId      String
   reminderId   String
-  scheduledFor DateTime
+  scheduledFor DateTime      // the reminder's time on that day, in UTC
   respondedAt  DateTime?
   status       String        @default("PENDING") // CheckInStatus
-  response     String?       // free-form or "yes"/"no"
+  response     String?       // "yes" | "no" | "not_yet" | free-form transcript
   note         String?
+  channel      String?       // where the answer came from: "app" | "hub" | "voice" | "chat" | "dashboard"
+  notifiedAt   DateTime?     // when the scheduler pushed it to the hub/app
+  nudgedAt     DateTime?     // when the scheduler sent the single follow-up nudge
 
   elder        Elder         @relation(fields: [elderId], references: [id], onDelete: Cascade)
   reminder     Reminder      @relation(fields: [reminderId], references: [id], onDelete: Cascade)
 
+  @@unique([reminderId, scheduledFor])
   @@index([elderId, scheduledFor])
 }
 
@@ -92,4 +109,121 @@ model MoodLog {
   createdAt DateTime @default(now())
 
   elder     Elder    @relation(fields: [elderId], references: [id], onDelete: Cascade)
+}
+
+// A paired senior app install or smart-home hub. The raw token is only shown once at pairing;
+// we store its SHA-256 so a DB leak doesn't leak device credentials.
+model Device {
+  id         String    @id @default(cuid()) // also the hub's MQTT id: carecircle/v1/hub/{id}/...
+  elderId    String
+  kind       String    // "APP" | "HUB"
+  name       String    @default("Device")
+  tokenHash  String    @unique
+  pushToken  String?   // Expo push token (APP only)
+  online     Boolean   @default(false)
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  elder      Elder     @relation(fields: [elderId], references: [id], onDelete: Cascade)
+}
+
+// Structured answers to short wellbeing prompts ("Did you eat?", "How did you sleep?"),
+// from the app, the hub, or extracted from companion chat by the NLU.
+model SelfReport {
+  id        String   @id @default(cuid())
+  elderId   String
+  kind      String   // "FEELING" | "MEAL" | "SLEEP" | "ACTIVITY" | "SOCIAL"
+  answer    String   // normalised answer, e.g. "good" | "okay" | "poor" | "yes" | "no"
+  text      String?  // what they actually said, if free-form
+  score     Float?   // wellbeing score in [-1, 1] from src/lib/ai/nlu.ts
+  source    String   @default("app") // "app" | "hub" | "chat"
+  createdAt DateTime @default(now())
+
+  elder     Elder    @relation(fields: [elderId], references: [id], onDelete: Cascade)
+
+  @@index([elderId, createdAt])
+}
+
+// Raw hub telemetry. kind: "temperature" | "humidity" | "air_quality" | "motion" | "sound_level" | "light"
+model SensorReading {
+  id        String   @id @default(cuid())
+  elderId   String
+  deviceId  String?
+  kind      String
+  value     Float
+  createdAt DateTime @default(now())
+
+  elder     Elder    @relation(fields: [elderId], references: [id], onDelete: Cascade)
+
+  @@index([elderId, kind, createdAt])
+}
+
+// Companion conversation log (both the senior's messages and the AI's replies)
+model ChatMessage {
+  id             String        @id @default(cuid())
+  elderId        String
+  conversationId String?
+  role           String        // "user" | "assistant"
+  content        String
+  source         String        @default("app") // "app" | "hub" | "dashboard"
+  intent         String?       // NLU intent of user messages
+  viaVoice       Boolean       @default(false) // spoken (STT) rather than typed
+  createdAt      DateTime      @default(now())
+
+  elder          Elder         @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([elderId, createdAt])
+}
+
+// One sitting of talking with the companion (messages less than 10 minutes apart).
+// When it ends, the AI writes a short summary for the caregivers.
+model Conversation {
+  id           String        @id @default(cuid())
+  elderId      String
+  startedAt    DateTime      @default(now())
+  lastActiveAt DateTime      @default(now())
+  endedAt      DateTime?
+  usedVoice    Boolean       @default(false)
+  summary      String?       // 2-3 sentences for the caregiver
+  mood         String?       // "good" | "okay" | "low" | "unwell"
+  concerns     String?       // JSON string[] of things worth following up
+  summarizedBy String?       // "llm" | "rules"
+
+  elder        Elder         @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+
+  @@index([elderId, startedAt])
+}
+
+// Something a caregiver should look at.
+// kind: "MISSED_REMINDER" | "ROUTINE_ANOMALY" | "NO_ACTIVITY" | "LOW_MOOD" | "HELP_REQUEST" | "DISTRESS" | "HUB_OFFLINE"
+model Alert {
+  id             String    @id @default(cuid())
+  elderId        String
+  kind           String
+  severity       String    @default("warning") // "info" | "warning" | "critical"
+  title          String
+  message        String
+  data           String?   // JSON blob with details (e.g. anomaly feature breakdown)
+  dedupeKey      String?   @unique // prevents the scheduler raising the same alert twice
+  acknowledgedAt DateTime?
+  acknowledgedBy String?   // caregiver name
+  createdAt      DateTime  @default(now())
+
+  elder          Elder     @relation(fields: [elderId], references: [id], onDelete: Cascade)
+
+  @@index([elderId, createdAt])
+}
+
+// Shared notes thread between the caregivers of one elder
+model CaregiverNote {
+  id          String    @id @default(cuid())
+  elderId     String
+  caregiverId String
+  body        String
+  createdAt   DateTime  @default(now())
+
+  elder       Elder     @relation(fields: [elderId], references: [id], onDelete: Cascade)
+  caregiver   Caregiver @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
 }

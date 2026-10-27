@@ -43,11 +43,11 @@ export function AdherenceChart({ checkIns }: { checkIns: CheckIn[] }) {
   const maxTotal = Math.max(1, ...days.map((d) => d.total));
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 font-medium text-slate-900">
+        <h2 className="flex items-center gap-2 font-medium text-stone-900">
           <svg
-            className="h-4 w-4 text-indigo-500"
+            className="h-4 w-4 text-accent"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -57,7 +57,7 @@ export function AdherenceChart({ checkIns }: { checkIns: CheckIn[] }) {
           </svg>
           Last 7 days
         </h2>
-        <div className="flex gap-3 text-xs text-slate-500">
+        <div className="flex gap-3 text-xs text-stone-500">
           <Legend color={STATUS_COLOR.DONE_ON_TIME} label="On time" />
           <Legend color={STATUS_COLOR.DONE_LATE} label="Late" />
           <Legend color={STATUS_COLOR.MISSED} label="Missed" />
@@ -66,7 +66,7 @@ export function AdherenceChart({ checkIns }: { checkIns: CheckIn[] }) {
       <div className="flex h-40 items-end justify-between gap-3">
         {days.map((day) => (
           <div key={day.date} className="flex flex-1 flex-col items-center gap-2">
-            <div className="flex h-32 w-full flex-col-reverse overflow-hidden rounded-lg bg-slate-50">
+            <div className="flex h-32 w-full flex-col-reverse overflow-hidden rounded-lg bg-stone-50">
               {(["DONE_ON_TIME", "DONE_LATE", "MISSED", "SKIPPED"] as const).map((status) => {
                 const count = day.counts[status] || 0;
                 if (!count) return null;
@@ -80,7 +80,7 @@ export function AdherenceChart({ checkIns }: { checkIns: CheckIn[] }) {
                 );
               })}
             </div>
-            <span className="text-[11px] font-medium text-slate-400">{day.label}</span>
+            <span className="text-[11px] font-medium text-stone-400">{day.label}</span>
           </div>
         ))}
       </div>
