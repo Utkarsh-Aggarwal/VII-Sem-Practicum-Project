@@ -105,16 +105,21 @@ npm run lint
 
 ### 5. Camera AI (optional)
 
-Needs Python 3.11 (TensorFlow, used by DeepFace, does not support newer versions yet).
+> **Full step-by-step guide (flashing the ESP32-CAM, Python 3.11, face photos, checks, troubleshooting): [docs/CAMERA_AI_SETUP.md](docs/CAMERA_AI_SETUP.md).**
+>
+> **Code changes as exact steps for an AI coding assistant: [docs/CAMERA_AI_INTEGRATION_STEPS.md](docs/CAMERA_AI_INTEGRATION_STEPS.md).**
+
+The ESP32-CAM serves its stream to one viewer at a time, so the camera AI service is that viewer: it runs YOLO pose and DeepFace on the frames, and relays the video at `http://<computer-ip>:8100/stream/<elderId>` for the dashboard and the app. In short:
 
 ```bash
+# apps/web/.env
+VISION_TOKEN=<secret>
+VISION_STREAM_URL=http://<computer-ip>:8100
+
 cd services/vision
 python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
-# same value as VISION_TOKEN in apps/web/.env.local
-VISION_TOKEN=... BACKEND_URL=http://localhost:3000 .venv/bin/uvicorn vision.app:app --port 8100
+VISION_TOKEN=<secret> BACKEND_URL=http://localhost:3000 .venv/bin/uvicorn vision.app:app --host 0.0.0.0 --port 8100
 ```
-
-The service watches the ESP32-CAM of every parent with a camera set on the dashboard (the same `{cameraUrl}` the live feed uses). By default it reads `{cameraUrl}/stream`. Many ESP32-CAM sketches serve only one stream viewer at a time; if the dashboard's live feed stops while the service runs, set `CAMERA_PATH` to a snapshot path your firmware has (for example `CAMERA_PATH=/capture` or `/cam-hi.jpg`), and the service fetches one JPEG per second instead. `CAMERA_SOURCES=<elderId>=<url>` overrides the camera address for one parent. Enrol faces as described in `services/vision/faces/README.md`. Try the models on a photo with `curl -F file=@photo.jpg "localhost:8100/analyze?elder_id=<elderId>"`.
 
 ## Configuration
 

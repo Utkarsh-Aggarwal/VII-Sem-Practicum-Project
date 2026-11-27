@@ -36,6 +36,19 @@ export function latestVision(elderId: string): VisionState | null {
   return latest.get(elderId) ?? null;
 }
 
+// Where browsers and phones load a parent's live video. The ESP32-CAM serves its stream to one
+// viewer at a time, so with VISION_STREAM_URL set the camera AI service is that viewer and relays the
+// video to everyone; without it, they load the camera directly (and the camera AI can't watch).
+export function relayStreamUrl(elderId: string) {
+  const relay = process.env.VISION_STREAM_URL?.replace(/\/$/, "");
+  return relay ? `${relay}/stream/${elderId}` : null;
+}
+
+export function liveStreamUrl(elder: { id: string; cameraUrl: string | null }) {
+  if (!elder.cameraUrl) return null;
+  return relayStreamUrl(elder.id) ?? `${elder.cameraUrl.replace(/\/$/, "")}/stream`;
+}
+
 export function requireVisionService(request: NextRequest) {
   const expected = process.env.VISION_TOKEN;
   if (!expected) throw new HttpError(503, "Camera AI is not configured (VISION_TOKEN)");

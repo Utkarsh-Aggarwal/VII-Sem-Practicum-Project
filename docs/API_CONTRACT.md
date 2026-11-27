@@ -7,7 +7,7 @@ part over exactly this contract.
 
 The existing ESP32-CAM sketch isn't affected by any of this:
 
-- The dashboard still loads the camera's MJPEG stream straight from `{cameraUrl}/stream` in the browser.
+- The ESP32-CAM serves one stream viewer at a time, so the service is that viewer and relays the video at `GET {service}/stream/{elderId}` (MJPEG, no auth, like the camera). With `VISION_STREAM_URL` set, the dashboard plays the relay, and `GET /api/elders/{id}` returns it as `streamUrl` for the app. Without it, both load `{cameraUrl}/stream` directly.
 - The `home/door/status` MQTT topic is outside the `carecircle/v1/...` namespace, so the backend never subscribes or publishes to it.
 
 There are two transports. They share the same handlers, so you can use either one or mix them:

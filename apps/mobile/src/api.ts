@@ -495,6 +495,7 @@ export type ParentDetails = {
   timezone: string;
   profile: string | null;
   cameraUrl: string | null;
+  streamUrl?: string | null; // where to load the live video (the camera, or the camera AI's relay)
   helpCaregiverId: string | null;
   caregivers: { relation: string; caregiver: { id: string; name: string; email: string; phone: string | null } }[];
   moodLogs: MoodRow[];

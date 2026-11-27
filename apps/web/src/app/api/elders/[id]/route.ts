@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCaregiverForElder, requireElderAccess } from "@/lib/auth";
 import { HttpError, readJson, route } from "@/lib/http";
 import { isValidTimeZone } from "@/lib/time";
+import { liveStreamUrl } from "@/lib/vision";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export const GET = route<Ctx>(async (request, { params }) => {
       elder: { ...rest, caregivers: caregivers.map((c) => ({ relation: c.relation, caregiver: { name: c.caregiver.name } })) },
     });
   }
-  return NextResponse.json({ elder });
+  return NextResponse.json({ elder: { ...elder, streamUrl: liveStreamUrl(elder) } });
 });
 
 const patchSchema = z.object({
@@ -37,7 +38,7 @@ const patchSchema = z.object({
   helpCaregiverId: z.string().nullable().optional(),
   avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   timezone: z.string().refine(isValidTimeZone, "unknown timezone").optional(),
-  // ESP32-CAM base URL; the dashboard loads {cameraUrl}/stream directly from the browser.
+  // ESP32-CAM base URL. Viewers load {cameraUrl}/stream, or the camera AI's relay (VISION_STREAM_URL).
   cameraUrl: z.string().trim().max(300).nullable().optional(),
   language: z.enum(["en", "hi"]).optional(),
   profile: z.string().max(2000).nullable().optional(),

@@ -17,10 +17,12 @@ export function LiveFeed({
   elderId,
   elderName,
   cameraUrl,
+  relayUrl,
 }: {
   elderId: string;
   elderName: string;
   cameraUrl: string | null;
+  relayUrl: string | null; // the camera AI's copy of the stream (see relayStreamUrl)
 }) {
   const [url, setUrl] = useState(cameraUrl);
   const [editing, setEditing] = useState(false);
@@ -85,7 +87,7 @@ export function LiveFeed({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             key={nonce}
-            src={`${url}/stream`}
+            src={relayUrl ?? `${url}/stream`}
             alt={`${elderName}'s home camera`}
             className="h-full w-full object-contain"
             onError={() => setStreamError(true)}

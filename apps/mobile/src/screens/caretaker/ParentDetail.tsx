@@ -489,7 +489,7 @@ function HealthTab({ parent, reload }: TabProps) {
     <>
       <RoutineSection insights={insights.data} error={insights.error} first={first} />
       <EnvironmentSection env={env.data} error={env.error} />
-      <CameraSection cameraUrl={details.data?.cameraUrl ?? null} first={first} />
+      <CameraSection cameraUrl={details.data?.cameraUrl ?? null} streamUrl={details.data?.streamUrl ?? null} first={first} />
       {bathroom.data && <BathroomSection sensor={bathroom.data} />}
 
       <Section title="Mood" icon="happy-outline">
@@ -630,11 +630,12 @@ function EnvironmentSection({ env, error }: { env: Environment | null; error: st
   );
 }
 
-// The ESP32-CAM serves MJPEG at {cameraUrl}/stream; React Native's Image can't play that, a WebView can.
-function CameraSection({ cameraUrl, first }: { cameraUrl: string | null; first: string }) {
+// The ESP32-CAM serves MJPEG at {cameraUrl}/stream (or the camera AI relays it, streamUrl); React
+// Native's Image can't play that, a WebView can.
+function CameraSection({ cameraUrl, streamUrl, first }: { cameraUrl: string | null; streamUrl: string | null; first: string }) {
   const [failed, setFailed] = useState(false);
   const url = cameraUrl?.replace(/\/$/, "");
-  const html = `<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#111;height:100%;display:flex;align-items:center;justify-content:center}img{width:100%;height:100%;object-fit:contain}</style></head><body><img src="${url}/stream" onerror="window.ReactNativeWebView.postMessage('error')"/></body></html>`;
+  const html = `<html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;background:#111;height:100%;display:flex;align-items:center;justify-content:center}img{width:100%;height:100%;object-fit:contain}</style></head><body><img src="${streamUrl ?? `${url}/stream`}" onerror="window.ReactNativeWebView.postMessage('error')"/></body></html>`;
   return (
     <Section title="Live camera" icon="videocam-outline">
       {!url ? (

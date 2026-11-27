@@ -8,6 +8,7 @@ import { SelfReportsCard } from "@/components/SelfReportsCard";
 import { MoodHistory } from "@/components/MoodHistory";
 import { LiveFeed } from "@/components/LiveFeed";
 import { BathroomSensorCard } from "@/components/BathroomSensorCard";
+import { relayStreamUrl } from "@/lib/vision";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function HealthTab({ params }: { params: Promise<{ id: stri
       <div className="space-y-5 lg:col-span-3">
         <RoutineInsights insights={plain(insights)} elderName={elder.name} />
         <EnvironmentCard env={plain(env)} timezone={elder.timezone} elderName={elder.name} />
-        <LiveFeed elderId={id} elderName={elder.name} cameraUrl={elder.cameraUrl} />
+        <LiveFeed elderId={id} elderName={elder.name} cameraUrl={elder.cameraUrl} relayUrl={relayStreamUrl(id)} />
         <BathroomSensorCard elderId={id} />
       </div>
       <div className="space-y-5 lg:col-span-2">

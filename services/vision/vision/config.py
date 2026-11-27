@@ -8,10 +8,10 @@ VISION_TOKEN = os.getenv("VISION_TOKEN", "")
 # index ("0" = the laptop camera, handy for a demo without the ESP32-CAM).
 CAMERA_SOURCES = os.getenv("CAMERA_SOURCES", "")
 
-# How frames are read from the ESP32-CAM. "/stream" keeps its MJPEG stream open. Many ESP32-CAM
-# sketches serve only one stream viewer at a time, so if the dashboard's live feed stops while this
-# service runs, set a snapshot path the firmware has (e.g. "/capture" or "/cam-hi.jpg"): the service
-# then fetches one JPEG per analysis and leaves the stream free for the family.
+# How frames are read from the ESP32-CAM. "/stream" (the default) keeps its one MJPEG stream open;
+# this service is then the camera's only viewer and relays the video at /stream/<elderId> for the
+# dashboard and the app (set VISION_STREAM_URL in apps/web). A snapshot path (e.g. "/capture") fetches
+# one JPEG per analysis instead, for a camera that has one.
 CAMERA_PATH = os.getenv("CAMERA_PATH", "/stream")
 
 POSE_MODEL = os.getenv("POSE_MODEL", "yolo11n-pose.pt")  # downloaded by Ultralytics on first run
